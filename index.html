@@ -64,6 +64,11 @@ h1{font-family:var(--display);font-weight:var(--dw);line-height:var(--dlh);font-
 h1 small{display:block;font-size:.3em;line-height:1.3;color:var(--hot);letter-spacing:.04em;margin-bottom:8px;-webkit-text-fill-color:var(--hot)}
 .label{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
 html[lang="hi"] .label{font-size:14px;letter-spacing:.02em}
+.live{display:flex;gap:8px;align-items:center;align-self:flex-start;font-size:14px;font-weight:600;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 14px}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 0 var(--good);animation:ping 1.6s infinite}
+.live[hidden]{display:none}
+@keyframes ping{70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+#runNo:empty{display:none}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
 .card .amt{font-family:var(--display);font-weight:var(--dw);font-size:clamp(26px,8.5vw,38px);line-height:1.1;word-break:break-all}
 .mlist{list-style:none;padding:0;display:flex;flex-direction:column;gap:6px}
@@ -162,7 +167,7 @@ html[lang="hi"] .math{font-size:13px}
 .steps b{color:var(--gold)}
 .acts{display:flex;flex-direction:column;gap:14px}
 #fx{position:fixed;inset:0;pointer-events:none;z-index:9;width:100%;height:100%}
-@media (prefers-reduced-motion:reduce){.item.pop{animation:none}.receipt{transform:none}}
+@media (prefers-reduced-motion:reduce){.live i{animation:none}.item.pop{animation:none}.receipt{transform:none}}
 </style>
 </head>
 <body>
@@ -177,6 +182,7 @@ html[lang="hi"] .math{font-size:13px}
       </div>
     </div>
     <h1 class="gold"><small id="tagline"></small><span id="h1t"></span></h1>
+    <div class="live" id="live" hidden><i></i><span id="liveTxt"></span></div>
     <div class="card">
       <div class="label" id="dayLbl"></div>
       <div class="amt gold" id="budgetTxt"></div>
@@ -219,6 +225,7 @@ html[lang="hi"] .math{font-size:13px}
       <div class="label" id="endLbl"></div>
       <div class="rank gold" id="rank"></div>
       <div class="pts" id="pts"></div>
+      <div class="label" id="runNo" style="margin-top:6px"></div>
     </div>
     <div class="receipt" id="receipt"></div>
     <div id="newTro"></div>
@@ -265,7 +272,7 @@ var T={
       chai:["Chai Lord","Buy 300 or more chai in one run."],fleet:["Garage King","Own 20 or more supercars."],hat:["Hat-trick","Complete all 3 missions in one run."],
       deal:["Summer Approved","Grab 10 flash deals in one run."],humble:["Humble Flex","Hit zero with no yacht, island or franchise."],"3k":["3K Club","Score 3,000 flex points."],
       s3:["3-Day Streak","Play the daily drop 3 days in a row."],s7:["7-Day Streak","Play the daily drop 7 days in a row."],reg:["Regular","Finish 10 runs."]},
-    cr:"Cr",lakh:"Lakh"
+    cr:"Cr",lakh:"Lakh",live:"{p} players · {r} runs played",runNo:"Run #{n} worldwide"
   },
   hi:{
     title:"अरबों उड़ाओ · Blow a Billion",tagline:"60 सेकंड। रोज़ नया ड्रॉप।",h1:"अरबों उड़ाओ",
@@ -295,7 +302,7 @@ var T={
       chai:["चाय का बादशाह","एक रन में 300 या ज़्यादा चाय।"],fleet:["गैराज किंग","20 या ज़्यादा सुपरकार।"],hat:["हैट्रिक","एक रन में तीनों मिशन पूरे करो।"],
       deal:["समर अप्रूव्ड","एक रन में 10 फ्लैश डील।"],humble:["सादा फ्लेक्स","बिना यॉट, आइलैंड या फ्रैंचाइज़ी के ज़ीरो।"],"3k":["3K क्लब","3,000 फ्लेक्स पॉइंट्स बनाओ।"],
       s3:["3 दिन की स्ट्रीक","लगातार 3 दिन डेली ड्रॉप खेलो।"],s7:["7 दिन की स्ट्रीक","लगातार 7 दिन डेली ड्रॉप खेलो।"],reg:["रेगुलर","10 रन पूरे करो।"]},
-    cr:"करोड़",lakh:"लाख"
+    cr:"करोड़",lakh:"लाख",live:"{p} खिलाड़ी · {r} रन खेले गए",runNo:"दुनिया भर में रन #{n}"
   }
 };
 var ITEMS=[
@@ -319,6 +326,27 @@ var TROPHIES=[
   {id:"reg",e:"🎟️",f:function(o,st){return st.plays>=10}}
 ];
 var $=function(id){return document.getElementById(id)};
+/* public play counter (Abacus, free, no key). Counts are shown to everyone. */
+var API="https://abacus.jasoncameron.dev", NS="blowabillion.github.io", C={players:null,runs:null};
+function api(kind,key){
+  try{return fetch(API+"/"+kind+"/"+NS+"/"+key).then(function(r){return r.ok?r.json():null})
+    .then(function(j){return j&&typeof j.value==="number"?j.value:null}).catch(function(){return null})}
+  catch(e){return Promise.resolve(null)}
+}
+function counters(){
+  var seen=null;try{seen=localStorage.getItem("bab-seen")}catch(e){}
+  Promise.all([api(seen?"get":"hit","players"),api("get","runs")]).then(function(v){
+    if(!seen&&v[0]!=null)pref("bab-seen","1");
+    if(v[0]!=null)C.players=v[0];
+    if(v[1]!=null)C.runs=v[1];
+    paintLive();
+  });
+}
+function paintLive(){
+  if(C.players==null){$("live").hidden=true;return}
+  $("liveTxt").textContent=fmt(L().live,{p:num(C.players),r:num(C.runs||0)});
+  $("live").hidden=false;
+}
 var DAY=Math.floor(Date.now()/864e5)-Math.floor(Date.UTC(2026,10,10)/864e5)+1;
 var S={lang:"hi",cur:"INR",mult:1,bal:0,owned:[],spentBy:[],deals:0,end:0,timer:null,done:null,cfg:null,daily:true,ev:null,tro:-1};
 var ST={best:0,bestDay:0,bestDayN:0,streak:0,lastDay:0,plays:0,tro:{}};
@@ -414,8 +442,9 @@ function paintTroDesc(){
   $("troDesc").textContent=t.e+" "+x[0]+": "+x[1]+(ST.tro[t.id]?l.won:"");
 }
 function setCur(c){S.cur=c;pref("bab-cur",c);paintStart()}
+function paintRunNo(){var d=S.done;$("runNo").textContent=d&&d.runNo?fmt(L().runNo,{n:num(d.runNo)}):""}
 function setLang(g){
-  S.lang=g;pref("bab-lang",g);paintStatic();paintStart();
+  S.lang=g;pref("bab-lang",g);paintStatic();paintStart();paintLive();
   if(S.done)paintEnd();
 }
 
@@ -505,6 +534,8 @@ function finish(){
   S.done={v:3,cur:S.cur,daily:S.daily,day:DAY,owned:S.owned.slice(),spentBy:S.spentBy.slice(),bal:S.bal,spent:b-S.bal,secs:secs,
           ms:ms,parts:parts,score:o.score,rank:rankIdx(o.score),pb:pb,fresh:fresh};
   paintEnd();show("end");rain();
+  var dd=S.done;
+  api("hit","runs").then(function(v){if(v==null)return;C.runs=v;dd.runNo=v;if(S.done===dd)paintRunNo();paintLive()});
 }
 function paintEnd(){
   var d=S.done,l=L();S.cur=d.cur;
@@ -529,6 +560,7 @@ function paintEnd(){
     '<div class="tag">'+l.tag+"</div>";
   $("newTro").textContent=d.fresh.length?l.unlocked+d.fresh.map(function(id){
     var t=TROPHIES.filter(function(x){return x.id===id})[0];return t.e+" "+l.tro[id][0]}).join(", "):"";
+  paintRunNo();
   $("retry").textContent=d.daily?fmt(l.retryDaily,{n:num(ST.bestDay||d.score)}):l.retryFree;
 }
 function flexText(){
@@ -574,7 +606,7 @@ function boot(saved){
   var g=null,c=null;try{g=localStorage.getItem("bab-lang");c=localStorage.getItem("bab-cur")}catch(e){}
   S.lang=g==="en"?"en":"hi";
   S.cur=c==="USD"?"USD":"INR";
-  paintStatic();paintStart();
+  paintStatic();paintStart();counters();
   if(saved&&saved.done&&saved.done.v===3){S.done=saved.done;paintEnd();show("end")}
 }
 var hot=window.claude&&window.claude.hot;
