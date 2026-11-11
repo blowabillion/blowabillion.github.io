@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blow a Billion</title>
+<meta name="description" content="You get a billion. 60 seconds to blow it all. New drop every day. A game by @lupintanmx.">
+<meta property="og:title" content="Blow a Billion">
+<meta property="og:description" content="You get a billion. 60 seconds to blow it all. Can you hit zero? By @lupintanmx">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#14091f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=DM+Mono:wght@400;500&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: one phone-width column. Loud gold-on-plum casino-sign HUD up top,
+   a fast tap list below, and the payoff is a plain paper receipt built to be screenshotted. */
+:root{
+  --bg:#14091f;
+  --panel:#23122f;
+  --line:#3b2350;
+  --gold:#f7c948;
+  --gold-deep:#c9860f;
+  --hot:#ff3d7f;
+  --good:#5fe3a1;
+  --ink:#fff6e0;
+  --muted:#b19cc2;
+  --paper:#f6f0e1;
+  --paper-ink:#1b1424;
+  --display:"Bowlby One","Arial Black",Impact,sans-serif;
+  --body:"Outfit",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"DM Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{
+  background:var(--bg);
+  background-image:radial-gradient(120% 60% at 50% 0%,#3a1450 0%,var(--bg) 60%);
+  background-attachment:fixed;
+  color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.4;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible,a:focus-visible{outline:3px solid var(--hot);outline-offset:2px}
+#app{max-width:480px;margin:0 auto;min-height:100%;padding:0 16px 32px;display:flex;flex-direction:column}
+.screen{display:none;flex-direction:column;gap:18px;padding-top:24px}
+.screen.on{display:flex}
+.gold{
+  background:linear-gradient(180deg,#fff3b0 0%,var(--gold) 45%,var(--gold-deep) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+h1{font-family:var(--display);font-weight:400;line-height:.92;font-size:clamp(48px,15vw,76px);letter-spacing:-.01em;text-wrap:balance;text-transform:uppercase}
+h1 small{display:block;font-size:.3em;color:var(--hot);letter-spacing:.04em;margin-bottom:8px;-webkit-text-fill-color:var(--hot)}
+.label{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.card .amt{font-family:var(--display);font-size:clamp(26px,8.5vw,38px);line-height:1;word-break:break-all}
+.mlist{list-style:none;padding:0;display:flex;flex-direction:column;gap:6px}
+.mlist li{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:baseline}
+.mlist li::before{content:"◆";color:var(--hot)}
+.mlist em{font-style:normal;color:var(--gold);font-size:13px;font-weight:600}
+.stats{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.stats b{color:var(--ink);font-variant-numeric:tabular-nums}
+.seg{display:flex;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px;align-self:flex-start}
+.seg button{padding:8px 16px;border-radius:999px;font-weight:600;color:var(--muted);min-height:40px}
+.seg button[aria-pressed="true"]{background:var(--gold);color:#2a1500}
+.big{
+  font-family:var(--display);font-size:22px;text-transform:uppercase;letter-spacing:.03em;
+  padding:18px 20px;border-radius:16px;color:#2a1500;
+  background:linear-gradient(180deg,#ffe98a,var(--gold) 50%,var(--gold-deep));
+  box-shadow:0 6px 0 #7a4d00,0 14px 30px rgba(247,201,72,.25);
+  text-align:center;text-decoration:none;display:block;width:100%;
+}
+.big:active{transform:translateY(4px);box-shadow:0 2px 0 #7a4d00}
+.big.hot{background:linear-gradient(180deg,#ff7aa8,var(--hot) 55%,#c2185b);color:#fff;box-shadow:0 6px 0 #7a0e38,0 14px 30px rgba(255,61,127,.25)}
+.big.hot:active{box-shadow:0 2px 0 #7a0e38}
+.ghost{padding:14px;border-radius:14px;border:1px solid var(--line);font-weight:600;width:100%;background:var(--panel)}
+.tro{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tro button{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 4px;font-size:11px;line-height:1.2;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px;min-height:74px}
+.tro button span{font-size:26px;filter:grayscale(1);opacity:.35}
+.tro button.won{border-color:var(--gold);color:var(--ink)}
+.tro button.won span{filter:none;opacity:1}
+#troDesc{font-size:14px;color:var(--muted);min-height:1.4em}
+.by{font-size:14px;color:var(--muted)}
+.by a{color:var(--hot);font-weight:600}
+
+/* play */
+#play{padding-top:0;gap:10px}
+.hud{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,var(--bg) 88%,transparent);padding:12px 0 14px;display:flex;flex-direction:column;gap:7px}
+.hudrow{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+#bal{font-family:var(--display);font-size:clamp(26px,9vw,42px);line-height:1;font-variant-numeric:tabular-nums;word-break:break-all}
+#clock{font-family:var(--display);font-size:30px;color:var(--hot);font-variant-numeric:tabular-nums}
+.bar{height:8px;border-radius:99px;background:var(--panel);overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--hot),var(--gold));transform-origin:left}
+#news{font-weight:800;font-size:14px;min-height:22px;letter-spacing:.02em;color:var(--muted)}
+#news.sale{color:var(--good)}
+#news.surge{color:var(--hot)}
+.chips{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--muted)}
+.chips div::before{content:"○ "}
+.chips div.ok{color:var(--good)}
+.chips div.ok::before{content:"● "}
+.items{display:flex;flex-direction:column;gap:8px}
+.item{
+  display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;text-align:left;
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 14px;width:100%;min-height:64px;
+}
+.item:active{border-color:var(--gold);background:#2f1840}
+.item[disabled]{opacity:.35}
+.item.sale{border-color:var(--good);box-shadow:0 0 0 2px var(--good) inset}
+.item.surge{border-color:var(--hot);box-shadow:0 0 0 2px var(--hot) inset}
+.item .e{font-size:32px;text-align:center}
+.item .n{font-weight:600;overflow-wrap:anywhere}
+.item .p{color:var(--gold);font-variant-numeric:tabular-nums;font-size:14px}
+.item.sale .p{color:var(--good)}
+.item.surge .p{color:var(--hot)}
+.item .q{font-family:var(--display);font-size:20px;min-width:44px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.item .q.has{color:var(--hot)}
+.item.pop{animation:pop .18s ease-out}
+@keyframes pop{50%{transform:scale(1.03)}}
+
+/* end */
+.rank{font-family:var(--display);font-size:clamp(32px,10.5vw,50px);line-height:1;text-transform:uppercase;text-wrap:balance}
+.pts{font-family:var(--display);font-size:22px;color:var(--hot);font-variant-numeric:tabular-nums}
+.receipt{
+  background:var(--paper);color:var(--paper-ink);font-family:var(--mono);font-size:13px;
+  padding:22px 18px 26px;transform:rotate(-1.2deg);
+  box-shadow:0 20px 50px rgba(0,0,0,.5);
+  -webkit-mask:radial-gradient(6px at 6px 100%,transparent 98%,#000) -6px 0/12px 100%;
+          mask:radial-gradient(6px at 6px 100%,transparent 98%,#000) -6px 0/12px 100%;
+}
+.receipt h2{font-family:var(--display);font-weight:400;font-size:22px;text-align:center;text-transform:uppercase;line-height:1}
+.receipt .sub{text-align:center;font-size:11px;letter-spacing:.12em;margin:6px 0 12px}
+.receipt hr{border:0;border-top:1.5px dashed var(--paper-ink);margin:10px 0;opacity:.5}
+.row{display:flex;justify-content:space-between;gap:10px;font-variant-numeric:tabular-nums}
+.row span:first-child{overflow-wrap:anywhere}
+.row span:last-child{white-space:nowrap}
+.row.t{font-weight:500;font-size:15px}
+.stamp{display:inline-block;border:3px solid #c2185b;color:#c2185b;font-family:var(--display);font-size:16px;padding:6px 10px;border-radius:6px;transform:rotate(-5deg);margin:12px 0 4px;text-transform:uppercase}
+.math{font-size:12px;margin-top:8px}
+.tag{text-align:center;font-weight:500;margin-top:12px;font-size:14px}
+#newTro{color:var(--gold);font-weight:600}
+#newTro:empty{display:none}
+.steps{display:flex;flex-direction:column;gap:8px;padding:0;list-style:none;counter-reset:s}
+.steps li{counter-increment:s;display:grid;grid-template-columns:28px 1fr;gap:10px}
+.steps li::before{content:counter(s);font-family:var(--display);color:var(--gold);font-size:20px;line-height:1.1}
+.steps b{color:var(--gold)}
+.acts{display:flex;flex-direction:column;gap:14px}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:9;width:100%;height:100%}
+@media (prefers-reduced-motion:reduce){.item.pop{animation:none}.receipt{transform:none}}
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div id="app">
+
+  <section class="screen on" id="start">
+    <h1 class="gold"><small>60 seconds. New drop every day.</small>Blow a Billion</h1>
+    <div class="card">
+      <div class="label" id="dayLbl">Today's drop</div>
+      <div class="amt gold" id="budgetTxt">$1,000,000,000</div>
+      <div>Spend it all before the clock hits zero. Prices change daily. Hit the missions for bonus points:</div>
+      <ul class="mlist" id="mstart"></ul>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div class="seg" role="group" aria-label="Currency">
+      <button id="curUSD" aria-pressed="true">$ Dollars</button>
+      <button id="curINR" aria-pressed="false">₹ Rupees</button>
+    </div>
+    <button class="big" id="go">Play today's drop</button>
+    <button class="ghost" id="free">Free play: random prices and missions</button>
+    <div>
+      <div class="label" style="margin-bottom:8px" id="troLbl">Trophies</div>
+      <div class="tro" id="tro"></div>
+    </div>
+    <p id="troDesc">Tap a trophy to see how to win it.</p>
+    <p class="by">A game by <a href="https://www.instagram.com/lupintanmx/" target="_blank" rel="noopener">@lupintanmx</a>. Pretend money only.</p>
+  </section>
+
+  <section class="screen" id="play">
+    <div class="hud">
+      <div class="hudrow"><span class="label">Left to blow</span><span class="label">Time</span></div>
+      <div class="hudrow"><div id="bal" class="gold">$0</div><div id="clock">60</div></div>
+      <div class="bar"><i id="tbar"></i></div>
+      <div id="news">Watch for flash sales and price surges</div>
+      <div class="chips" id="chips"></div>
+      <div class="seg" role="group" aria-label="Buy amount" style="align-self:stretch">
+        <button data-m="1" aria-pressed="true" style="flex:1">Buy ×1</button>
+        <button data-m="10" aria-pressed="false" style="flex:1">×10</button>
+        <button data-m="100" aria-pressed="false" style="flex:1">×100</button>
+      </div>
+    </div>
+    <div class="items" id="items"></div>
+  </section>
+
+  <section class="screen" id="end">
+    <div>
+      <div class="label" id="endLbl">Your rank</div>
+      <div class="rank gold" id="rank">Big Baller</div>
+      <div class="pts" id="pts">0 flex points</div>
+    </div>
+    <div class="receipt" id="receipt"></div>
+    <div id="newTro"></div>
+    <ol class="steps">
+      <li><span><b>Screenshot</b> your receipt.</span></li>
+      <li><span>Post it to your Story and tag <b>@lupintanmx</b>.</span></li>
+      <li><span>Comment your points on the latest post. Who tops today's drop?</span></li>
+    </ol>
+    <div class="acts">
+      <a class="big hot" href="https://www.instagram.com/lupintanmx/" target="_blank" rel="noopener">Follow @lupintanmx</a>
+      <button class="ghost" id="retry">Run it back</button>
+      <button class="ghost" id="copy">Copy my flex as a comment</button>
+      <button class="ghost" id="home">Trophies and menu</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+"use strict";
+var HANDLE="@lupintanmx", SECONDS=60;
+var ITEMS=[
+  {e:"☕",n:"Chai for a friend",p:1},
+  {e:"👟",n:"Fresh sneakers",p:250},
+  {e:"📱",n:"Gold-plated phone",p:9000},
+  {e:"⌚",n:"Diamond watch",p:85000},
+  {e:"🏎️",n:"Supercar",p:400000},
+  {e:"🚽",n:"Solid gold toilet",p:1500000},
+  {e:"🚁",n:"Helicopter",p:12000000},
+  {e:"💍",n:"7-day mega wedding",p:40000000},
+  {e:"🛩️",n:"Private jet",p:70000000},
+  {e:"🛥️",n:"Superyacht",p:150000000},
+  {e:"🏝️",n:"Private island",p:250000000},
+  {e:"🏏",n:"Cricket franchise",p:600000000}
+];
+var BUDGETS=[1e9,75e7,15e8,2e9,333e7];
+var RANKS=[[0,"Window Shopper"],[500,"Pocket Money Prince"],[1000,"Local Rich Kid"],[1500,"Big Baller"],[2000,"Almost a Billionaire"],[2600,"Certified Billionaire Brain"]];
+var TROPHIES=[
+  {id:"zero",e:"🧹",n:"Clean Wipe",d:"End a run at exactly zero.",f:function(o){return o.bal===0}},
+  {id:"fast",e:"⚡",n:"Speed Demon",d:"Hit zero in under 40 seconds.",f:function(o){return o.bal===0&&o.secs<40}},
+  {id:"all",e:"🛍️",n:"One of Each",d:"Buy all 12 kinds in one run.",f:function(o){return o.kinds===12}},
+  {id:"chai",e:"☕",n:"Chai Lord",d:"Buy 300 or more chai in one run.",f:function(o){return o.owned[0]>=300}},
+  {id:"fleet",e:"🏎️",n:"Garage King",d:"Own 20 or more supercars.",f:function(o){return o.owned[4]>=20}},
+  {id:"hat",e:"🎩",n:"Hat-trick",d:"Complete all 3 missions in one run.",f:function(o){return o.mdone===3}},
+  {id:"deal",e:"🏷️",n:"Summer Approved",d:"Grab 10 flash deals in one run.",f:function(o){return o.deals>=10}},
+  {id:"humble",e:"🙏",n:"Humble Flex",d:"Hit zero with no yacht, island or franchise.",f:function(o){return o.bal===0&&!o.owned[9]&&!o.owned[10]&&!o.owned[11]}},
+  {id:"3k",e:"👑",n:"3K Club",d:"Score 3,000 flex points.",f:function(o){return o.score>=3000}},
+  {id:"s3",e:"🔥",n:"3-Day Streak",d:"Play the daily drop 3 days in a row.",f:function(o,st){return st.streak>=3}},
+  {id:"s7",e:"🌋",n:"7-Day Streak",d:"Play the daily drop 7 days in a row.",f:function(o,st){return st.streak>=7}},
+  {id:"reg",e:"🎟️",n:"Regular",d:"Finish 10 runs.",f:function(o,st){return st.plays>=10}}
+];
+var $=function(id){return document.getElementById(id)};
+var DAY=Math.floor(Date.now()/864e5)-Math.floor(Date.UTC(2026,10,10)/864e5)+1;
+var S={cur:"USD",mult:1,bal:0,owned:[],spentBy:[],deals:0,end:0,timer:null,done:null,cfg:null,daily:true,ev:null};
+var ST={best:0,bestDay:0,bestDayN:0,streak:0,lastDay:0,plays:0,tro:{}};
+function load(){try{var j=JSON.parse(localStorage.getItem("bab-v2")||"null");if(j)for(var x in ST)if(x in j)ST[x]=j[x]}catch(e){}
+  if(ST.bestDayN!==DAY){ST.bestDay=0;ST.bestDayN=DAY}
+  if(ST.lastDay&&ST.lastDay<DAY-1)ST.streak=0;}
+function save(){try{localStorage.setItem("bab-v2",JSON.stringify(ST))}catch(e){}}
+
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;var t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function nice(v){var m=Math.pow(10,Math.floor(Math.log10(v))-1);return Math.round(v/m)*m}
+function makeCfg(seed){
+  var r=rng(seed*7919+13), ri=function(a,b){return a+Math.floor(r()*(b-a+1))};
+  var cfg={budget:BUDGETS[ri(0,BUDGETS.length-1)]};
+  cfg.prices=ITEMS.map(function(it,i){return i===0?1:nice(it.p*(0.6+r()))});
+  var types=["exact","least","none","all","zero","deals","fast"];
+  for(var i=types.length-1;i>0;i--){var j=ri(0,i),t=types[i];types[i]=types[j];types[j]=t}
+  cfg.missions=types.slice(0,3).map(function(t){
+    var i,n;
+    if(t==="exact"){i=ri(2,7);n=ri(3,9);return {txt:"Own exactly "+n+" × "+ITEMS[i].n,f:function(o){return o.owned[i]===n}}}
+    if(t==="least"){i=ri(4,8);n=ri(5,12);return {txt:"Own "+n+" or more × "+ITEMS[i].n,f:function(o){return o.owned[i]>=n}}}
+    if(t==="none"){i=ri(9,11);return {txt:"Blow 90% with no "+ITEMS[i].n,f:function(o){return o.owned[i]===0&&o.pct>=90}}}
+    if(t==="all")return {txt:"Buy all 12 kinds",f:function(o){return o.kinds===12}};
+    if(t==="zero")return {txt:"End at exactly zero",f:function(o){return o.bal===0}};
+    if(t==="deals")return {txt:"Grab 5 flash deals",f:function(o){return o.deals>=5}};
+    return {txt:"Hit zero in under 45 seconds",f:function(o){return o.bal===0&&o.secs<45}};
+  });
+  cfg.events=[6,14,22,30,38,46,54].map(function(t){return {t:t,i:ri(2,11),sale:r()<0.6}});
+  return cfg;
+}
+var DAILY=makeCfg(DAY);
+
+function k(){return S.cur==="INR"?10:1}
+function sym(){return S.cur==="INR"?"₹":"$"}
+function full(n){return sym()+Math.round(n).toLocaleString(S.cur==="INR"?"en-IN":"en-US")}
+function trim(x){return (Math.round(x*10)/10).toString()}
+function short(n){
+  if(S.cur==="INR"){
+    if(n>=1e7)return "₹"+trim(n/1e7)+" Cr";
+    if(n>=1e5)return "₹"+trim(n/1e5)+" Lakh";
+    return full(n);
+  }
+  if(n>=1e9)return "$"+trim(n/1e9)+"B";
+  if(n>=1e6)return "$"+trim(n/1e6)+"M";
+  if(n>=1e4)return "$"+trim(n/1e3)+"K";
+  return full(n);
+}
+function num(n){return Math.round(n).toLocaleString("en-US")}
+function price(i){var p=S.cfg.prices[i]*k();if(S.ev&&S.ev.i===i)p=S.ev.sale?p/2:p*2;return p}
+function show(id){["start","play","end"].forEach(function(s){$(s).classList.toggle("on",s===id)});window.scrollTo(0,0)}
+function live(secs){
+  var b=S.cfg.budget*k(), kinds=0;S.owned.forEach(function(q){if(q)kinds++});
+  return {owned:S.owned,bal:S.bal,deals:S.deals,secs:secs,pct:(b-S.bal)/b*100,kinds:kinds};
+}
+
+function paintStart(){
+  $("curUSD").setAttribute("aria-pressed",S.cur==="USD");
+  $("curINR").setAttribute("aria-pressed",S.cur==="INR");
+  $("dayLbl").textContent="Today's drop · Day #"+DAY;
+  $("budgetTxt").textContent=full(DAILY.budget*k());
+  $("mstart").innerHTML=DAILY.missions.map(function(m){return "<li><span>"+m.txt+"</span><em>+300</em></li>"}).join("");
+  $("stats").innerHTML="<span>Best today <b>"+num(ST.bestDay)+"</b></span><span>All-time <b>"+num(ST.best)+"</b></span><span>Streak <b>"+ST.streak+(ST.streak===1?" day":" days")+"</b></span>";
+  var won=0;
+  $("tro").innerHTML=TROPHIES.map(function(t,i){var w=!!ST.tro[t.id];if(w)won++;
+    return '<button id="tro-'+i+'" class="'+(w?"won":"")+'" data-i="'+i+'"><span>'+t.e+"</span>"+t.n+"</button>"}).join("");
+  $("troLbl").textContent="Trophies · "+won+" of "+TROPHIES.length;
+}
+function setCur(c){S.cur=c;try{localStorage.setItem("bab-cur",c)}catch(e){}paintStart()}
+
+function buildItems(){
+  var box=$("items");box.innerHTML="";
+  ITEMS.forEach(function(it,i){
+    var b=document.createElement("button");
+    b.className="item";b.id="item-"+i;
+    b.innerHTML='<span class="e">'+it.e+'</span><span><span class="n">'+it.n+'</span><br><span class="p" id="p-'+i+'"></span></span><span class="q" id="q-'+i+'">0</span>';
+    b.addEventListener("click",function(){buy(i)});
+    box.appendChild(b);
+  });
+  $("chips").innerHTML=S.cfg.missions.map(function(m,i){return '<div id="chip-'+i+'">'+m.txt+"</div>"}).join("");
+}
+function paintPlay(){
+  $("bal").textContent=full(S.bal);
+  ITEMS.forEach(function(_,i){
+    var el=$("item-"+i), hit=S.ev&&S.ev.i===i;
+    el.disabled=price(i)>S.bal;
+    el.classList.toggle("sale",!!hit&&S.ev.sale);el.classList.toggle("surge",!!hit&&!S.ev.sale);
+    $("p-"+i).textContent=short(price(i))+(hit?(S.ev.sale?"  · 50% OFF":"  · SURGE ×2"):"");
+    var q=$("q-"+i);q.textContent="×"+S.owned[i];q.classList.toggle("has",S.owned[i]>0);
+  });
+  var o=live(elapsed());
+  S.cfg.missions.forEach(function(m,i){$("chip-"+i).classList.toggle("ok",!!m.f(o))});
+}
+function elapsed(){return Math.min(SECONDS,(SECONDS*1000-Math.max(0,S.end-Date.now()))/1000)}
+function buy(i){
+  if(!S.timer)return;
+  var p=price(i), n=Math.min(S.mult,Math.floor(S.bal/p));
+  if(n<1)return;
+  S.bal-=n*p;S.owned[i]+=n;S.spentBy[i]+=n*p;
+  if(S.ev&&S.ev.i===i&&S.ev.sale)S.deals++;
+  var el=$("item-"+i);el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop");
+  paintPlay();
+  if(S.bal<=0)finish();
+}
+function tick(){
+  var left=Math.max(0,S.end-Date.now()), t=SECONDS-left/1000, ev=null;
+  S.cfg.events.forEach(function(e){if(t>=e.t&&t<e.t+5)ev=e});
+  if(ev!==S.ev){
+    S.ev=ev;var nw=$("news");
+    nw.className=ev?(ev.sale?"sale":"surge"):"";
+    nw.textContent=ev?(ev.sale?"FLASH SALE: "+ITEMS[ev.i].n+" 50% off. Deal points!":"PRICE SURGE: "+ITEMS[ev.i].n+" costs double. Burn it faster!"):"Watch for flash sales and price surges";
+    paintPlay();
+  }
+  $("clock").textContent=Math.ceil(left/1000);
+  $("tbar").style.transform="scaleX("+(left/(SECONDS*1000))+")";
+  if(left<=0)finish();
+}
+function start(daily){
+  S.daily=daily;S.cfg=daily?DAILY:makeCfg(Math.floor(Math.random()*1e9)+1e6);
+  S.bal=S.cfg.budget*k();S.owned=ITEMS.map(function(){return 0});S.spentBy=ITEMS.map(function(){return 0});
+  S.deals=0;S.mult=1;S.ev=null;S.done=null;
+  document.querySelectorAll("[data-m]").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.m==="1")});
+  $("news").className="";$("news").textContent="Watch for flash sales and price surges";
+  buildItems();
+  S.end=Date.now()+SECONDS*1000;
+  paintPlay();show("play");
+  clearInterval(S.timer);S.timer=setInterval(tick,100);tick();
+}
+function rankOf(score){var r=RANKS[0][1];RANKS.forEach(function(x){if(score>=x[0])r=x[1]});return r}
+function finish(){
+  if(!S.timer)return;
+  var secs=Math.round(elapsed()*10)/10;
+  clearInterval(S.timer);S.timer=null;S.ev=null;
+  var o=live(secs), b=S.cfg.budget*k();
+  var ms=S.cfg.missions.map(function(m){return {txt:m.txt,ok:!!m.f(o)}});
+  o.mdone=ms.filter(function(m){return m.ok}).length;
+  var parts=[
+    ["Money blown ("+Math.floor(o.pct)+"%)",Math.round(o.pct*10)],
+    ["Missions "+o.mdone+"/3",o.mdone*300],
+    ["Flash deals ×"+Math.min(10,o.deals),Math.min(10,o.deals)*25],
+    ["Variety "+o.kinds+"/12",o.kinds*20]
+  ];
+  if(o.bal===0)parts.push(["Zero bonus, "+trim(SECONDS-secs)+"s left",500+Math.round((SECONDS-secs)*20)]);
+  o.score=parts.reduce(function(a,p){return a+p[1]},0);
+  ST.plays++;
+  if(S.daily){
+    if(ST.lastDay!==DAY){ST.streak=ST.lastDay===DAY-1?ST.streak+1:1;ST.lastDay=DAY}
+    if(o.score>ST.bestDay)ST.bestDay=o.score;
+  }
+  var pb=o.score>ST.best;if(pb)ST.best=o.score;
+  var fresh=[];
+  TROPHIES.forEach(function(t){if(!ST.tro[t.id]&&t.f(o,ST)){ST.tro[t.id]=1;fresh.push(t.e+" "+t.n)}});
+  save();
+  S.done={cur:S.cur,daily:S.daily,day:DAY,owned:S.owned.slice(),spentBy:S.spentBy.slice(),bal:S.bal,spent:b-S.bal,secs:secs,
+          ms:ms,parts:parts,score:o.score,rank:rankOf(o.score),pb:pb,fresh:fresh};
+  paintEnd();show("end");rain();
+}
+function paintEnd(){
+  var d=S.done;S.cur=d.cur;
+  var mode=d.daily?"Daily drop · Day #"+d.day:"Free play";
+  $("endLbl").textContent=mode+" · your rank";
+  $("rank").textContent=d.rank;
+  $("pts").textContent=num(d.score)+" flex points"+(d.pb?" · new best!":"");
+  var rows=d.owned.map(function(q,i){
+    return q?'<div class="row"><span>'+num(q)+" × "+ITEMS[i].n+"</span><span>"+short(d.spentBy[i])+"</span></div>":"";
+  }).join("")||'<div class="row"><span>Nothing. Not even chai.</span><span>'+sym()+"0</span></div>";
+  var weekly=150*k(), years=Math.floor(d.spent/weekly/52);
+  $("receipt").innerHTML=
+    "<h2>Blow a Billion</h2><div class=\"sub\">"+mode.toUpperCase()+"</div><hr>"+rows+"<hr>"+
+    '<div class="row t"><span>TOTAL BLOWN</span><span>'+full(d.spent)+"</span></div>"+
+    '<div class="row"><span>Left in the bank</span><span>'+full(d.bal)+"</span></div>"+
+    '<div class="row"><span>Time</span><span>'+d.secs+"s</span></div><hr>"+
+    d.ms.map(function(m){return '<div class="row"><span>'+(m.ok?"[x] ":"[ ] ")+m.txt+"</span><span></span></div>"}).join("")+"<hr>"+
+    d.parts.map(function(p){return '<div class="row"><span>'+p[0]+"</span><span>+"+num(p[1])+"</span></div>"}).join("")+
+    '<div class="row t"><span>FLEX POINTS</span><span>'+num(d.score)+"</span></div>"+
+    '<div style="text-align:center"><span class="stamp">'+d.rank+"</span></div><hr>"+
+    '<div class="math">Summer\'s frugal math: at '+full(weekly)+" a week, that money buys groceries for a family of four for "+num(years)+" years.</div>"+
+    '<div class="tag">'+HANDLE+" · game link in bio</div>";
+  $("newTro").textContent=d.fresh.length?"Trophy unlocked: "+d.fresh.join(", "):"";
+  $("retry").textContent=d.daily?"Run it back: beat "+num(ST.bestDay||d.score):"Run it back: new random drop";
+}
+function flexText(){
+  var d=S.done;
+  return (d.daily?"Day #"+d.day+": ":"")+num(d.score)+" flex points, \""+d.rank+"\" 💸 Blew "+full(d.spent)+" in "+d.secs+"s. Beat that. Game link in "+HANDLE+" bio.";
+}
+
+/* coin rain, one burst at the finish */
+function rain(){
+  if(matchMedia("(prefers-reduced-motion:reduce)").matches)return;
+  var c=$("fx"),x=c.getContext("2d"),w=c.width=innerWidth,h=c.height=innerHeight,t0=performance.now();
+  var P=[];for(var i=0;i<70;i++)P.push({x:Math.random()*w,y:-Math.random()*h,v:3+Math.random()*5,r:6+Math.random()*7,a:Math.random()*6});
+  (function f(t){
+    x.clearRect(0,0,w,h);
+    P.forEach(function(p){p.y+=p.v;p.a+=.15;
+      x.fillStyle="#f7c948";x.beginPath();x.ellipse(p.x,p.y,p.r*Math.abs(Math.cos(p.a))+1,p.r,0,0,7);x.fill();
+      x.strokeStyle="#c9860f";x.lineWidth=2;x.stroke();});
+    if(t-t0<2600)requestAnimationFrame(f);else x.clearRect(0,0,w,h);
+  })(t0);
+}
+
+$("curUSD").onclick=function(){setCur("USD")};
+$("curINR").onclick=function(){setCur("INR")};
+$("go").onclick=function(){start(true)};
+$("free").onclick=function(){start(false)};
+$("retry").onclick=function(){start(S.done?S.done.daily:true)};
+$("home").onclick=function(){paintStart();show("start")};
+$("tro").onclick=function(e){var b=e.target.closest("button");if(!b)return;var t=TROPHIES[+b.dataset.i];
+  $("troDesc").textContent=t.e+" "+t.n+": "+t.d+(ST.tro[t.id]?" Won!":"")};
+document.querySelectorAll("[data-m]").forEach(function(b){
+  b.onclick=function(){S.mult=+b.dataset.m;document.querySelectorAll("[data-m]").forEach(function(o){o.setAttribute("aria-pressed",o===b)})};
+});
+$("copy").onclick=function(){
+  var btn=this,txt=flexText();
+  function ok(){btn.textContent="Copied. Paste it in the comments";setTimeout(function(){btn.textContent="Copy my flex as a comment"},2500)}
+  function fail(){btn.textContent=txt}
+  try{navigator.clipboard.writeText(txt).then(ok,fail)}catch(e){fail()}
+};
+
+function boot(saved){
+  load();
+  var c=null;try{c=localStorage.getItem("bab-cur")}catch(e){}
+  if(!c){var tz="";try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||""}catch(e){}
+    c=(/Kolkata|Calcutta/.test(tz)||/-IN$/.test(navigator.language||""))?"INR":"USD";}
+  S.cur=c==="INR"?"INR":"USD";
+  paintStart();
+  if(saved&&saved.done&&saved.done.parts){S.done=saved.done;paintEnd();show("end")}
+}
+var hot=window.claude&&window.claude.hot;
+if(hot&&hot.snapshot)hot.snapshot(function(){return {done:S.done}});
+if(hot&&hot.ready)hot.ready(boot);else boot((hot&&hot.data)||{});
+})();
+</script>
+</body>
+</html>
